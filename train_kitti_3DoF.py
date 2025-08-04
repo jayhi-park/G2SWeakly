@@ -27,7 +27,7 @@ import cv2
 from PIL import Image
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from matplotlib import colors
-
+from tqdm import tqdm
 
 def show_cam_on_image(img: np.ndarray,
                       mask: np.ndarray,
@@ -487,13 +487,12 @@ def train(net, args, save_path):
             optimizer = optim.Adam(params, lr=1e-4)
 
         trainloader = load_train_data(args.batch_size, args.shift_range_lat, args.shift_range_lon, args.rotation_range,
-                                      weak_supervise=True, train_noisy=args.train_noisy, stage=args.stage,
+                                      weak_supervise=args.weak_supervise, train_noisy=args.train_noisy, stage=args.stage,
                                       data_amount=args.supervise_amount)
 
         print('batch_size:', args.batch_size, '\n num of batches:', len(trainloader))
 
-        for Loop, Data in enumerate(trainloader, 0):
-
+        for Loop, Data in enumerate(tqdm(trainloader), 0):
             sat_align_cam, sat_map, left_camera_k, grd_left_imgs, gt_shift_u, gt_shift_v, gt_heading = [item.to(device) for item in Data[:7]]
 
             sat_feat_dict, sat_conf_dict, g2s_feat_dict, g2s_conf_dict, shift_lats, shift_lons, thetas = \
@@ -650,7 +649,7 @@ def train(net, args, save_path):
                 # gt heading here just to compute the GPS position
 
 
-                loss = args.contrastive_coe * corr_loss + args.GPS_error_coe * GPS_loss
+                loss = 1 * corr_loss + args.GPS_error_coe * GPS_loss
 
                 R_err = torch.abs(thetas[:, -1, -1].reshape(-1) - gt_heading.reshape(-1)).mean() * args.rotation_range
 
@@ -727,17 +726,22 @@ def parse_args():
     parser.add_argument('--supervise_amount', type=float, default=1.0,
                         help='0.1, 0.2, 0.3, ..., 1')
 
+    parser.add_argument('--weak_supervise', type=int, default=1)
+    parser.add_argument('--train_noisy', type=int, default=1)
+    parser.add_argument('--save', type=str)
+
+
     args = parser.parse_args()
 
     return args
 
 
 def getSavePath(args):
-    save_path= restore_path = './ModelsKitti/3DoF/Stage' + str(args.stage) \
+    save_path= restore_path = '/ws/LTdata/G2SWeakly/3DoF/Stage' + str(args.stage) \
                 + '/lat' + str(args.shift_range_lat) + 'm_lon' + str(args.shift_range_lon) + 'm_rot' + str(
         args.rotation_range)  \
                 + '_Nit' + str(args.N_iters) + '_' + str(args.Optimizer) + '_' + str(args.proj) \
-                + '_Level' + args.level + '_Channels' + args.channels
+                + '_Level' + args.level + '_Channels' + args.channels + args.save
 
     if args.ConfGrd and args.stage > 0:
         save_path = save_path + '_ConfGrd'

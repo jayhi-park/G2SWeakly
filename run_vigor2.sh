@@ -1,7 +1,7 @@
 
 #CUDA_VISIBLE_DEVICES=2 python train_vigor_2DoF.py --Supervision Weakly --level 1 --area cross --rotation_range 0 --test 1;
 #CUDA_VISIBLE_DEVICES=2 python train_vigor_2DoF.py --Supervision Weakly --level 1 --area same --rotation_range 0 --test 1 ;
-CUDA_VISIBLE_DEVICES=3 python3 train_vigor_2DoF.py --Supervision Weakly --level 1 --area cross --rotation_range 180  --save weakly;
+CUDA_VISIBLE_DEVICES=0 python3 train_vigor_2DoF.py --Supervision Fully --level 1 --area cross --rotation_range 180 --save fully;
 #CUDA_VISIBLE_DEVICES=2 python train_vigor_2DoF.py --Supervision Weakly --level 1 --area same  --rotation_range 180 --test 1;
 
 

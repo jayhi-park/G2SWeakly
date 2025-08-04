@@ -32,6 +32,7 @@ import argparse
 import time
 import matplotlib.pyplot as plt
 import cv2
+from tqdm import tqdm
 
 from train_kitti_3DoF import show_cam_on_image
 
@@ -278,7 +279,7 @@ def train(net, args, save_path):
 
         print('batch_size:', args.batch_size, '\n num of batches:', len(trainloader))
 
-        for Loop, Data in enumerate(trainloader, 0):
+        for Loop, Data in enumerate(tqdm(trainloader), 0):
 
 
             grd, sat, gt_shift_u, gt_shift_v, gt_rot, meter_per_pixel = [item.to(device) for item in Data]
@@ -310,7 +311,7 @@ def train(net, args, save_path):
 
             else:
 
-                corr_maps = batch_wise_cross_corr(sat_feat_dict, sat_conf_dict, g2s_feat_dict, g2s_conf_dict, args, sat_uncer_dict)
+                corr_maps = batch_wise_cross_corr(sat_feat_dict, sat_conf_dict, g2s_feat_dict, g2s_conf_dict, args)
 
                 if args.visualize:
 
@@ -464,6 +465,7 @@ def parse_args():
     parser.add_argument('--grd', type=float, default=0., help='')
     parser.add_argument('--sat_grd', type=float, default=1., help='')
     parser.add_argument('--amount', type=float, default=1., help='')
+    parser.add_argument('--save', type=str)
 
     args = parser.parse_args()
 
@@ -471,10 +473,10 @@ def parse_args():
 
 
 def getSavePath(args):
-    restore_path = './ModelsVIGOR/' + str(args.task) \
+    restore_path = '/ws/LTdata/G2SWeakly/VIGOR/' + str(args.task) \
                    + '/' + args.area + '_rot' + str(args.rotation_range) \
                    + '_' + str(args.proj) \
-                   + '_Level' + args.level + '_Channels' + args.channels
+                   + '_Level' + args.level + '_Channels' + args.channels + args.save
 
     save_path = restore_path
 

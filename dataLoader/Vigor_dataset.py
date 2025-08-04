@@ -12,10 +12,10 @@ from torch.utils.data import DataLoader
 from torchvision import transforms
 
 num_thread_workers = 8
-root = '/backup/dataset/VIGOR'
+root = '/ws/data/VIGOR'
 
 class VIGORDataset(Dataset):
-    def __init__(self, root, rotation_range, label_root='splits_new', split='same', train=True, transform=None, pos_only=True, amount=1.):
+    def __init__(self, root, rotation_range, label_root='splits_corrected', split='same', train=True, transform=None, pos_only=True, amount=1.):
         self.root = root
         self.rotation_range = rotation_range
         self.label_root = label_root
@@ -49,7 +49,7 @@ class VIGORDataset(Dataset):
             sat_list_fname = os.path.join(self.root, label_root, city, 'satellite_list.txt')
             with open(sat_list_fname, 'r') as file:
                 for line in file.readlines():
-                    self.sat_list.append(os.path.join(self.root, city, 'satellite', line.replace('\n', '')))
+                    self.sat_list.append(os.path.join(self.root, 'satellite', city, line.replace('\n', '')))
                     self.sat_index_dict[line.replace('\n', '')] = idx
                     idx += 1
             print('InputData::__init__: load', sat_list_fname, idx)
@@ -67,11 +67,11 @@ class VIGORDataset(Dataset):
             # load grd panorama list
             if self.split == 'same':
                 if self.train:
-                    label_fname = os.path.join(self.root, self.label_root, city, 'same_area_balanced_train__corrected.txt')
+                    label_fname = os.path.join(self.root, self.label_root, city, 'same_area_balanced_train.txt')
                 else:
-                    label_fname = os.path.join(self.root, label_root, city, 'same_area_balanced_test__corrected.txt')
+                    label_fname = os.path.join(self.root, label_root, city, 'same_area_balanced_test.txt')
             elif self.split == 'cross':
-                label_fname = os.path.join(self.root, self.label_root, city, 'pano_label_balanced__corrected.txt')
+                label_fname = os.path.join(self.root, self.label_root, city, 'pano_label_balanced.txt')
 
             with open(label_fname, 'r') as file:
                 for line in file.readlines():
@@ -81,7 +81,7 @@ class VIGORDataset(Dataset):
                         label.append(self.sat_index_dict[data[i]])
                     label = np.array(label).astype(int)
                     delta = np.array([data[2:4], data[5:7], data[8:10], data[11:13]]).astype(float)
-                    self.grd_list.append(os.path.join(self.root, city, 'panorama', data[0]))
+                    self.grd_list.append(os.path.join(self.root, 'ground', city, 'panorama', data[0]))
                     self.label.append(label)
                     self.delta.append(delta)
                     if not label[0] in self.sat_cover_dict:
@@ -262,7 +262,7 @@ def load_vigor_data(batch_size, area="same", rotation_range=10, train=True, weak
         val_indices = index_list[int(len(index_list) * 0.8):]
         training_set = Subset(vigor, train_indices)
         val_set = Subset(vigor, val_indices)
-        if weak_supervise and stage != 0:
+        if weak_supervise: #and stage != 0:
             train_bs = DistanceBatchSampler(torch.utils.data.RandomSampler(training_set), batch_size, True,
                                             vigor.label[train_indices])
             train_dataloader = DataLoader(training_set, batch_sampler=train_bs, num_workers=num_thread_workers)

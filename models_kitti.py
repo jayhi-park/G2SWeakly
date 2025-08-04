@@ -797,7 +797,7 @@ class Model(nn.Module):
                 g2s_feat_dict[level] = g2s_feat
                 g2s_conf_dict[level] = overhead_conf
 
-            return sat_feat_dict, sat_conf_dict, g2s_feat_dict, g2s_conf_dict, shift_lats, shift_lons, thetas, None
+            return sat_feat_dict, sat_conf_dict, g2s_feat_dict, g2s_conf_dict, shift_lats, shift_lons, thetas
 
         else:
 

@@ -17,7 +17,7 @@ from torchvision import transforms
 
 # root_dir = '../../dataset/Kitti1' # '../../data/Kitti' # '../Data' #'..\\Data' #
 # root_dir = '/home/yujiao/dataset/Kitti1'
-root_dir = '/backup/dataset/Kitti1'
+root_dir = '/ws/data/kitti-vo'
 
 test_csv_file_name = 'test.csv'
 ignore_csv_file_name = 'ignore.csv'

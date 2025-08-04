@@ -1,7 +1,7 @@
 
 #CUDA_VISIBLE_DEVICES=2 python train_kitti_rot_corr.py --rotation_range 10 --stage 0 --share 0 --level 1
-#CUDA_VISIBLE_DEVICES=1 python3 train_kitti_3DoF.py --rotation_range 180 --stage 0 --level 1 --weak_supervise 1 --train_noisy 0 --save ws1_tn0
-CUDA_VISIBLE_DEVICES=1 python3 train_kitti_3DoF.py --rotation_range 180 --stage 1 --level 1 --weak_supervise 1 --train_noisy 0 --save ws1_tn0
+#CUDA_VISIBLE_DEVICES=2 python3 train_kitti_3DoF.py --rotation_range 180 --stage 0 --level 1 --weak_supervise 0 --train_noisy 0 --save ws0_tn0
+CUDA_VISIBLE_DEVICES=2 python3 train_kitti_3DoF.py --rotation_range 180 --stage 1 --level 1 --weak_supervise 0 --train_noisy 0 --save ws0_tn0
 #CUDA_VISIBLE_DEVICES=2 python train_kitti_3DoF.py --rotation_range 10 --stage 1 --share 1 --ConfGrd 1 --level 1 --test 1
 #CUDA_VISIBLE_DEVICES=2 python train_kitti_3DoF.py --rotation_range 10 --stage 1 --share 1 --ConfGrd 1 --GPS_error_coe 1 --test 1
 #
