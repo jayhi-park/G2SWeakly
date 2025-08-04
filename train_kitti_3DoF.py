@@ -28,6 +28,7 @@ from PIL import Image
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from matplotlib import colors
 from tqdm import tqdm
+from utils.wandb_logger import WandbLogger
 
 def show_cam_on_image(img: np.ndarray,
                       mask: np.ndarray,
@@ -60,9 +61,10 @@ def show_cam_on_image(img: np.ndarray,
     return np.uint8(255 * cam)
 
 
-def test1(net_test, args, save_path, epoch):
+def test1(net_test, args, save_path, wandb_logger, epoch):
 
     net_test.eval()
+    wandb_features = dict()
 
     dataloader = load_test1_data(args.batch_size, args.shift_range_lat, args.shift_range_lon, args.rotation_range)
     
@@ -285,12 +287,19 @@ def test1(net_test, args, save_path, epoch):
 
     net_test.train()
 
+    wandb_features[f'test1/shift_dis'] = np.mean(distance)
+    wandb_features[f'test1/shift_dis_median'] = np.median(distance)
+    wandb_features[f'test1/shift_rot'] = np.mean(angle_diff)
+    wandb_features[f'test1/shift_rot_median'] = np.median(angle_diff)
+    wandb_logger.log_evaluate(wandb_features)
+
     return
 
 
-def test2(net_test, args, save_path):
+def test2(net_test, args, save_path, wandb_logger):
 
     net_test.eval()
+    wandb_features = dict()
 
     dataloader = load_test2_data(args.batch_size, args.shift_range_lat, args.shift_range_lon, args.rotation_range)
     
@@ -460,11 +469,20 @@ def test2(net_test, args, save_path):
     result = np.sum((diff_lats < metrics[0])) / diff_lats.shape[0] * 100
 
     net_test.train()
+
+    wandb_features[f'test2/shift_dis'] = np.mean(distance)
+    wandb_features[f'test2/shift_dis_median'] = np.median(distance)
+    wandb_features[f'test2/shift_rot'] = np.mean(angle_diff)
+    wandb_features[f'test2/shift_rot_median'] = np.median(angle_diff)
+    wandb_logger.log_evaluate(wandb_features)
+
     return result
 
 
-def train(net, args, save_path):
+def train(net, args, save_path, wandb_logger):
     bestRankResult = 0.0
+
+    wandb_features = dict()
 
     time_start = time.time()
     for epoch in range(args.resume, args.epochs):
@@ -670,6 +688,9 @@ def train(net, args, save_path):
 
                     time_start = time_end
 
+            wandb_features['loss'] = loss.item()
+            wandb_logger.log_evaluate(wandb_features)
+
         print('Save Model ...')
         if not os.path.exists(save_path):
             os.makedirs(save_path)
@@ -729,6 +750,7 @@ def parse_args():
     parser.add_argument('--weak_supervise', type=int, default=1)
     parser.add_argument('--train_noisy', type=int, default=1)
     parser.add_argument('--save', type=str)
+    parser.add_argument('--wandb', action='store_true')
 
 
     args = parser.parse_args()
@@ -778,6 +800,13 @@ if __name__ == '__main__':
 
     save_path, restore_path = getSavePath(args)
 
+    if args.wandb:
+        wandb_config = dict(project="360_cvgl", entity='jayhi-park', name='/'.join(save_path.split('/')[3:]))
+        wandb_logger = WandbLogger(wandb_config, args)
+    else:
+        wandb_logger = WandbLogger(None)
+    wandb_logger.before_run()
+
     net = Model(args, device=device)
 
     if args.multi_gpu:
@@ -789,8 +818,8 @@ if __name__ == '__main__':
         net.load_state_dict(torch.load(os.path.join(
             save_path.replace('lat' + str(args.shift_range_lat) + 'm_lon' + str(args.shift_range_lon), 'lat20.0m_lon20.0'),
             'model_2.pth')), strict=False)
-        test1(net, args, save_path, epoch=2)
-        test2(net, args, save_path)
+        test1(net, args, save_path, wandb_logger, epoch=2)
+        test2(net, args, save_path, wandb_logger)
 
     else:
 
@@ -813,7 +842,7 @@ if __name__ == '__main__':
 
         lr = args.lr
 
-        train(net, args, save_path)
+        train(net, args, save_path, wandb_logger)
 
 
 

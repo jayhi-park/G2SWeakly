@@ -35,6 +35,7 @@ import cv2
 from tqdm import tqdm
 
 from train_kitti_3DoF import show_cam_on_image
+from utils.wandb_logger import WandbLogger
 
 
 def test(net_test, args, save_path):
@@ -132,8 +133,9 @@ def test(net_test, args, save_path):
     net_test.train()
 
 
-def val(dataloader, net, args, save_path, epoch, best=0.0, stage=None):
+def val(dataloader, net, args, save_path, wandb_logger, epoch, best=0.0, stage=None):
     time_start = time.time()
+    wandb_features = dict()
 
     net.eval()
     print('batch_size:', args.batch_size, '\n num of batches:', len(dataloader))
@@ -209,6 +211,11 @@ def val(dataloader, net, args, save_path, epoch, best=0.0, stage=None):
     print(line)
     f.write(line + '\n')
 
+    wandb_features[f'{args.area}/shift_dis'] = np.mean(distance)
+    wandb_features[f'{args.area}/shift_dis_median'] = np.median(distance)
+    wandb_features[f'{args.area}/shift_rot'] = np.mean(angle_diff)
+    wandb_features[f'{args.area}/shift_rot_median'] = np.median(angle_diff)
+    wandb_logger.log_evaluate(wandb_features)
 
     for idx in range(len(metrics)):
         pred = np.sum(distance < metrics[idx]) / distance.shape[0] * 100
@@ -238,8 +245,10 @@ def val(dataloader, net, args, save_path, epoch, best=0.0, stage=None):
     return result
 
 
-def train(net, args, save_path):
+def train(net, args, save_path, wandb_logger):
     bestResult = 0.0
+
+    wandb_features = dict()
 
     time_start = time.time()
     for epoch in range(args.resume, args.epochs):
@@ -407,6 +416,10 @@ def train(net, args, save_path):
 
                     time_start = time_end
 
+            wandb_features['loss'] = loss.item()
+            wandb_logger.log_evaluate(wandb_features)
+
+
         print('Save Model ...')
         if not os.path.exists(save_path):
             os.makedirs(save_path)
@@ -466,6 +479,7 @@ def parse_args():
     parser.add_argument('--sat_grd', type=float, default=1., help='')
     parser.add_argument('--amount', type=float, default=1., help='')
     parser.add_argument('--save', type=str)
+    parser.add_argument('--wandb', action='store_true')
 
     args = parser.parse_args()
 
@@ -515,6 +529,13 @@ if __name__ == '__main__':
 
     save_path, restore_path = getSavePath(args)
 
+    if args.wandb:
+        wandb_config = dict(project="360_cvgl", entity='jayhi-park', name='/'.join(save_path.split('/')[3:]))
+        wandb_logger = WandbLogger(wandb_config, args)
+    else:
+        wandb_logger = WandbLogger(None)
+    wandb_logger.before_run()
+
     net = ModelVIGOR(args, device)
     if args.multi_gpu:
         net = nn.DataParallel(net, dim=0)
@@ -523,7 +544,7 @@ if __name__ == '__main__':
 
     if args.test:
         net.load_state_dict(torch.load(os.path.join(save_path, 'Model_best.pth')), strict=False)
-        current = test(net, args, save_path)
+        current = test(net, args, save_path, wandb_logger)
 
     else:
 
@@ -535,5 +556,5 @@ if __name__ == '__main__':
         if args.visualize:
             net.load_state_dict(torch.load(os.path.join(save_path, 'Model_best.pth')), strict=False)
 
-        train(net, args, save_path)
+        train(net, args, save_path, wandb_logger)
 
